@@ -1,0 +1,80 @@
+[gd_scene load_steps=5 format=3 uid="uid://cw7m1v7y8niwr"]
+
+[ext_resource type="Script" uid="uid://bukyrwqnosita" path="res://ShaderControls.gd" id="1_j0p63"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_noarx"]
+flip_faces = true
+size = Vector2(2, 2)
+
+[sub_resource type="Shader" id="Shader_a0tk4"]
+code = "shader_type spatial;
+// Prevent the quad from being affected by lighting and fog. This also improves performance.
+render_mode unshaded, fog_disabled;
+uniform sampler2D depth_texture : hint_depth_texture;
+uniform sampler2D screen_texture: hint_screen_texture, filter_nearest, repeat_disable;
+uniform float vinMod = 1.0;
+uniform float noisePower_R = 1.0f;
+uniform float noisePower_G = 1.0;
+uniform float noisePower_B = 1.0;
+
+void vertex() {
+  POSITION = vec4(VERTEX.xy, 1.0, 1.0);
+}
+
+float BadRandom(vec2 uv) {
+    return fract(sin(dot(uv, vec2(8, -8.00005))) * 12836.5453);
+}
+
+float BadRandom2(vec2 uv) {
+    return fract(cos(dot(uv, vec2(8, -8.00005))) * 12836.5453);
+}
+
+float BadRandom3(vec2 uv) {
+    return fract(sin(dot(uv, vec2(10, 10.00001))) * 2836.5453);
+}
+
+void fragment() {
+  vec2 UV_new = SCREEN_UV - mod(SCREEN_UV, 1.0/VIEWPORT_SIZE);
+  float depth = texture(depth_texture, SCREEN_UV).x;
+  vec3 ndc = vec3(SCREEN_UV * 2.0 - 1.0, depth);
+  vec4 view = INV_PROJECTION_MATRIX * vec4(ndc, 1.0);
+  view.xyz /= view.w;
+  float linear_depth = -view.z;
+
+  vec4 world = INV_VIEW_MATRIX * INV_PROJECTION_MATRIX * vec4(ndc, 1.0);
+  vec3 world_position = world.xyz / world.w;
+  
+  vec3 color = texture(screen_texture, UV_new).rgb;
+
+  vec2 offset = UV_new - vec2(0.5);
+  float y_scale = 4.5;
+  offset.y *= y_scale;
+  float scaled_distance = length(offset);
+
+
+  float noise_R = ((BadRandom(UV_new + TIME) * 2.0 - 1.0) * 0.05) * scaled_distance;
+  float noise_G = ((BadRandom2(UV_new + TIME) * 2.0 - 1.0) * 0.02) * scaled_distance;
+  float noise_B = ((BadRandom3(UV_new + TIME) * 2.0 - 1.0) * 0.05) * scaled_distance;
+
+  float vignette_R = smoothstep(vinMod, 0.1, scaled_distance + (noise_R * noisePower_R));
+  float vignette_G = smoothstep(vinMod, 0.1, scaled_distance + (noise_G * noisePower_G));
+  float vignette_B = smoothstep(vinMod, 0.1, scaled_distance - (noise_B * noisePower_B));
+  vec3 vinColor = vec3(vignette_R, vignette_G, vignette_B);
+
+  ALBEDO.rgb = color * vinColor;
+}"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_r3fl7"]
+render_priority = 0
+shader = SubResource("Shader_a0tk4")
+shader_parameter/vinMod = 0.0
+shader_parameter/noisePower_R = 1.0
+shader_parameter/noisePower_G = 1.0
+shader_parameter/noisePower_B = 1.0
+
+[node name="PostprocessFilter" type="MeshInstance3D"]
+cast_shadow = 0
+extra_cull_margin = 16384.0
+mesh = SubResource("QuadMesh_noarx")
+surface_material_override/0 = SubResource("ShaderMaterial_r3fl7")
+script = ExtResource("1_j0p63")

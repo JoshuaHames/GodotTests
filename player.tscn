@@ -1,0 +1,34 @@
+[gd_scene load_steps=4 format=3 uid="uid://c54unw04ne3am"]
+
+[ext_resource type="Script" uid="uid://co52y027nwfio" path="res://MovementControls.gd" id="1_4flbx"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_noarx"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_a0tk4"]
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_4flbx")
+pounceLeniency = 0.25
+maxHorizontalPouncePower = 5.05
+maxVerticalPouncePower = 0.8500000000000001
+
+[node name="Standing Hitbox" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_noarx")
+
+[node name="HeadRay" type="RayCast3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.008066058, 0)
+target_position = Vector3(0, 1, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0027532578, 0.005682349, -0.0034736395)
+mesh = SubResource("CapsuleMesh_a0tk4")
+
+[node name="Crouching Hitbox" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.75, 0, 0, 0, 1, 0, -0.24339366, 0)
+shape = SubResource("CapsuleShape3D_noarx")
+disabled = true
+
+[node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+
+[node name="maincam" type="Camera3D" parent="Head"]
